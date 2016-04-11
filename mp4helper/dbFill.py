@@ -106,7 +106,7 @@ def main(argv):
         # Randomly generate task parameters
         assigned = (randint(0,10) > 4)
         assignedUser = randint(0,len(userIDs)-1) if assigned else -1
-        assignedUserID = userIDs[assignedUser] if assigned else 'unassigned'
+        assignedUserID = userIDs[assignedUser] if assigned else ''
         assignedUserName = userNames[assignedUser] if assigned else 'unassigned'
         assignedUserEmail = userEmails[assignedUser] if assigned else 'unassigned'
         completed = (randint(0,10) > 5)
