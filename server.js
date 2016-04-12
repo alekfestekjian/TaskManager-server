@@ -95,8 +95,8 @@ userRoute.get(function(req, res,next) {
     user.find(id,fields,options,function(err,users){
 
         if(err){
-            res.status(404);
-            res.send(err);
+            res.status(500);
+            res.json({message: "Something went wrong! Try again",data:users})
             return;
         }
         res.status(200);
@@ -159,21 +159,27 @@ PUT
 */
 userIDRoute.put(function(req, res,next) {
   user.findByIdAndUpdate(req.params.id,req.body,function(err,user) {
+    console.log(user)
+
     if(err){
-        res.status(500);
-        res.json({message:"Email already exists",data:[]});
-        return;
-    }
-    if(user == null){
+        if(err.name == 'MongoError'){
+            res.status(500);
+            res.json({message:"Email already exists",data:[]});
+            return;
+        }
         res.status(404);
         res.json({message:"User not found",data:[]});
         return;
     }
-    if(user.name == "" || user.email == ""){
+
+    if(typeof(req.body.name) === "undefined" || typeof(req.body.email) === "undefined" || req.body.email === "" || req.body.name === ""){
         res.status(500);
         res.json({message:"Validation Error: You are missing name or email",data:[]});
         return;
     }
+    user.name = req.body.name;
+    user.email = req.body.email;
+
     res.json({message: "User updated",data:user});
   });
 });
@@ -238,12 +244,13 @@ taskRoute.get(function(req, res,next) {
     };
 
     task.find(id,fields,options,function(err,tasks){
-
         if(err){
-          res.send(err);
+            res.status(500);
+            res.json({message: "Something went wrong! Try again",data:tasks})
+            return;
         }
+        res.status(200);
         res.json({message: "OK",data:tasks});
-        console.log("found tasks");
     });
 });
 
@@ -252,10 +259,8 @@ TASK POST
 */
 
 taskRoute.post(function(req, res,next) {
-  console.log(typeof(req.body.name) == "undefined");
-  console.log(typeof(req.body.deadline) == "undefined");
-
   if(typeof(req.body.name) == "undefined" || typeof(req.body.deadline) == "undefined"){
+    res.status(500);
     res.json({message:"You are missing name or deadline",data:[]});
     return;
   }
@@ -264,11 +269,14 @@ taskRoute.post(function(req, res,next) {
 
 
   task.create(req.body,function(err,task) {
-     if(err){
+    if(err){
        res.send(err);
-     }
-     console.log("creating");
-     res.json({message: "OK",data:task});
+       res.status(500);
+       res.json({message:"Something went wrong try again!",data:[]});
+       return;
+    }
+    res.status(201);
+    res.json({message: "Task added",data:task});
   });
 });
 /*
@@ -280,13 +288,13 @@ var taskIDRoute = router.route('/tasks/:id');
 TASK ID GET
 */
 taskIDRoute.get(function(req, res,next){
-
   task.findById(req.params.id,function(err,tasks){
-    if(err || user == null){
-      res.send(err);
+    if(err || tasks == null){
+        res.status(404);
+        res.send({message: "Task not found",data: []});
+        return;
     }
     res.json({message: "OK",data:tasks});
-    console.log("found tasks");
   });
 });
 /*
@@ -294,13 +302,23 @@ TASK PUT
 */
 taskIDRoute.put(function(req, res,next) {
   task.findByIdAndUpdate(req.params.id,req.body,function(err,task) {
-     if(err || task == null){
-       console.log("FAIL");
-       res.status(404);
-       res.send(err);
-     }
-     console.log("creating");
-     res.json({message: "OK",data:task});
+    if(task == null){
+        res.status(404);
+        res.json({message:"Task not found",data:[]});
+        return;
+    }
+    if(typeof(req.body.name) == "undefined" || typeof(req.body.email) == "undefined" || req.body.email == "" || req.body.name == ""){
+        res.status(500);
+        res.json({message:"Validation Error: You are missing name or deadline",data:[]});
+        return;
+    }
+    if(err){
+        res.status(500);
+        res.json({message:"Something went wrong!",data:[]});
+        return;
+    }
+
+    res.json({message: "Task update",data:task});
   });
 });
 /*
@@ -308,11 +326,12 @@ TASK DELETE
 */
 taskIDRoute.delete(function(req, res,next) {
   task.findByIdAndRemove(req.params.id, function(err,task) {
-     if(err || task == null){
+    if(err || task == null){
        res.status(404);
-       res.send(err);
-     }
-     res.json({message:  "task was deleted from database" });
+       res.json({message:"Task doesn't exist",data:[]});
+       return;
+    }
+    res.json({message:  "Task deleted",data:[] });
     });
 });
 
