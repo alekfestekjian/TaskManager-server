@@ -84,22 +84,24 @@ userRoute.get(function(req, res,next) {
     if(typeof(req.query.count) != "undefined"){
       count = JSON.parse(req.query.count);
     }
-
+    console.log(count);
+    console.log(fields);
     var options = {
       "skip": skip,
       "limit": limit,
       "sort": sort,
       "select": select,
-      "count": count
+      "count": count,
     };
+    console.log(options);
     user.find(id,fields,options,function(err,users){
-
         if(err){
             res.status(500);
             res.json({message: "Something went wrong! Try again",data:users})
             return;
         }
         res.status(200);
+
         res.json({message: "OK",data:users});
     });
 });
@@ -158,8 +160,8 @@ userIDRoute.get(function(req, res,next){
 PUT
 */
 userIDRoute.put(function(req, res,next) {
-  user.findByIdAndUpdate(req.params.id,req.body,function(err,user) {
-    console.log(user)
+  user.findByIdAndUpdate(req.params.id,req.body,function(err,users) {
+    console.log(users);
 
     if(err){
         if(err.name == 'MongoError'){
@@ -177,10 +179,18 @@ userIDRoute.put(function(req, res,next) {
         res.json({message:"Validation Error: You are missing name or email",data:[]});
         return;
     }
-    user.name = req.body.name;
-    user.email = req.body.email;
-
-    res.json({message: "User updated",data:user});
+    // user.name = req.body.name;
+    // user.email = req.body.email;
+    // if(typeof(req.body.pendingTasks) = "undefined")
+    // if(req.body.dateCreated)
+    user.findById(req.params.id,function(err,user_return){
+        if(err){
+            res.status(500);
+            res.json({message: "Something went wrong! Try again",data:[]})
+            return;
+        }
+        res.json({message: "User updated",data:user_return});
+    });
   });
 });
 /*
@@ -301,13 +311,13 @@ taskIDRoute.get(function(req, res,next){
 TASK PUT
 */
 taskIDRoute.put(function(req, res,next) {
-  task.findByIdAndUpdate(req.params.id,req.body,function(err,task) {
-    if(task == null){
+  task.findByIdAndUpdate(req.params.id,req.body,function(err,tasks) {
+    if(tasks == null){
         res.status(404);
         res.json({message:"Task not found",data:[]});
         return;
     }
-    if(typeof(req.body.name) == "undefined" || typeof(req.body.email) == "undefined" || req.body.email == "" || req.body.name == ""){
+    if(typeof(req.body.name) == "undefined" || typeof(req.body.deadline) == "undefined" || req.body.deadline == "" || req.body.name == ""){
         res.status(500);
         res.json({message:"Validation Error: You are missing name or deadline",data:[]});
         return;
@@ -317,8 +327,14 @@ taskIDRoute.put(function(req, res,next) {
         res.json({message:"Something went wrong!",data:[]});
         return;
     }
-
-    res.json({message: "Task update",data:task});
+    task.findById(req.params.id,function(err,task_return){
+        if(err){
+            res.status(500);
+            res.json({message: "Something went wrong! Try again",data:[]})
+            return;
+        }
+        res.json({message: "Task updated",data:task_return});
+    });
   });
 });
 /*
