@@ -94,16 +94,30 @@ userRoute.get(function(req, res,next) {
       "count": count,
     };
     console.log(options);
-    user.find(id,fields,options,function(err,users){
-        if(err){
-            res.status(500);
-            res.json({message: "Something went wrong! Try again",data:users})
-            return;
-        }
-        res.status(200);
+    if(count == true){
+        user.count({}, function(err, count){
+            if(err){
+                res.status(500);
+                res.json({message: "Something went wrong! Try again",data:count})
+                return;
+            }
+            res.status(200);
+            res.json({message: "OK",data:count});
+        });
+    }
+    else{
+        user.find(id,fields,options,function(err,users){
+            if(err){
+                res.status(500);
+                res.json({message: "Something went wrong! Try again",data:users})
+                return;
+            }
+            res.status(200);
 
-        res.json({message: "OK",data:users});
-    });
+            res.json({message: "OK",data:users});
+        });
+    }
+
 });
 
 /*
@@ -160,38 +174,82 @@ userIDRoute.get(function(req, res,next){
 PUT
 */
 userIDRoute.put(function(req, res,next) {
-  user.findByIdAndUpdate(req.params.id,req.body,function(err,users) {
-    console.log(users);
-
-    if(err){
-        if(err.name == 'MongoError'){
-            res.status(500);
-            res.json({message:"Email already exists",data:[]});
+    user.findById(req.params.id,req.body,function(err,users){
+        if(err){
+            if(err.name == 'MongoError'){
+                res.status(500);
+                res.json({message:"Email already exists",data:[]});
+                return;
+            }
+            res.status(404);
+            res.json({message:"User not found",data:[]});
             return;
         }
-        res.status(404);
-        res.json({message:"User not found",data:[]});
-        return;
-    }
 
-    if(typeof(req.body.name) === "undefined" || typeof(req.body.email) === "undefined" || req.body.email === "" || req.body.name === ""){
-        res.status(500);
-        res.json({message:"Validation Error: You are missing name or email",data:[]});
-        return;
-    }
+        if(typeof(req.body.name) === "undefined" || typeof(req.body.email) === "undefined" || req.body.email === "" || req.body.name === ""){
+            res.status(500);
+            res.json({message:"Validation Error: You are missing name or email",data:[]});
+            return;
+        }
+        user.update(req.params.id,req.body,function(err,users){
+            if(err){
+                res.status(500);
+                res.json({message: "Something went wrong! Try again",data:[]})
+                return;
+            }
+            user.findById(req.params.id,function(err,user_return){
+                if(err){
+                    res.status(500);
+                    res.json({message: "Something went wrong! Try again",data:[]})
+                    return;
+                }
+                console.log(user_return.dateCreated);
+                res.json({message: "User updated",data:user_return});
+            });
+        });
+        // user.name = req.body.name;
+        // user.email = req.body.email;
+        //
+    });
+
+  // user.findByIdAndUpdate(req.params.id,req.body,function(err,users) {
+    // console.log(users.dateCreated);
+    // console.log(req.body.dateCreated);
+    // if(err){
+    //     if(err.name == 'MongoError'){
+    //         res.status(500);
+    //         res.json({message:"Email already exists",data:[]});
+    //         return;
+    //     }
+    //     res.status(404);
+    //     res.json({message:"User not found",data:[]});
+    //     return;
+    // }
+    //
+    // if(typeof(req.body.name) === "undefined" || typeof(req.body.email) === "undefined" || req.body.email === "" || req.body.name === ""){
+    //     res.status(500);
+    //     res.json({message:"Validation Error: You are missing name or email",data:[]});
+    //     return;
+    // }
     // user.name = req.body.name;
     // user.email = req.body.email;
     // if(typeof(req.body.pendingTasks) = "undefined")
     // if(req.body.dateCreated)
-    user.findById(req.params.id,function(err,user_return){
-        if(err){
-            res.status(500);
-            res.json({message: "Something went wrong! Try again",data:[]})
-            return;
-        }
-        res.json({message: "User updated",data:user_return});
-    });
-  });
+    // if(typeof(req.body.dateCreated) !== "undefined" ){
+    //     req.body.dateCreated = users.dateCreated;
+    //     users.dateCreated
+    // }
+    // user.findById(req.params.id,function(err,user_return){
+    //     if(err){
+    //         res.status(500);
+    //         res.json({message: "Something went wrong! Try again",data:[]})
+    //         return;
+    //     }
+    //     console.log(user_return.dateCreated);
+    //     res.json({message: "User updated",data:user_return});
+    // });
+  // });
+
 });
 /*
 DELETE
@@ -252,16 +310,30 @@ taskRoute.get(function(req, res,next) {
       "select": select,
       "count": count
     };
+    if(count == true){
+        task.count({}, function(err, count){
+            if(err){
+                res.status(500);
+                res.json({message: "Something went wrong! Try again",data:count})
+                return;
+            }
+            res.status(200);
+            res.json({message: "OK",data:count});
+        });
+    }
+    else{
+        task.find(id,fields,options,function(err,tasks){
+            if(err){
+                res.status(500);
+                res.json({message: "Something went wrong! Try again",data:tasks})
+                return;
+            }
+            res.status(200);
+            res.json({message: "OK",data:tasks});
+        });
+    }
 
-    task.find(id,fields,options,function(err,tasks){
-        if(err){
-            res.status(500);
-            res.json({message: "Something went wrong! Try again",data:tasks})
-            return;
-        }
-        res.status(200);
-        res.json({message: "OK",data:tasks});
-    });
+
 });
 
 /*
@@ -311,6 +383,11 @@ taskIDRoute.get(function(req, res,next){
 TASK PUT
 */
 taskIDRoute.put(function(req, res,next) {
+  console.log(req.body.name);
+  console.log(req.body.deadline);
+  task.findById(req.params.id,req.body,function(err,tasks){
+
+  });
   task.findByIdAndUpdate(req.params.id,req.body,function(err,tasks) {
     if(tasks == null){
         res.status(404);
@@ -326,6 +403,9 @@ taskIDRoute.put(function(req, res,next) {
         res.status(500);
         res.json({message:"Something went wrong!",data:[]});
         return;
+    }
+    if(typeof(req.body.dateCreated) !== "undefined" ){
+        req.body.dateCreated = tasks.dateCreated;
     }
     task.findById(req.params.id,function(err,task_return){
         if(err){
