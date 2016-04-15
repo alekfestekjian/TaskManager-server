@@ -23,7 +23,6 @@ var port = process.env.PORT || 4000;
 var allowCrossDomain = function(req, res, next) {
   res.header("Access-Control-Allow-Origin", "*");
   res.header("Access-Control-Allow-Headers", "X-Requested-With, X-HTTP-Method-Override, Content-Type, Accept");
-
   // res.header("Access-Control-Allow-Headers", "X-Requested-With, X-HTTP-Method-Override, Content-Type, Accept");
   res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
   next();
@@ -93,8 +92,9 @@ userRoute.get(function(req, res,next) {
       "select": select,
       "count": count,
     };
-    console.log(options);
-    if(count == true){
+    console.log(count);
+    if(count === true){
+        console.log("HI got to count")
         user.count({}, function(err, count){
             if(err){
                 res.status(500);
@@ -113,7 +113,6 @@ userRoute.get(function(req, res,next) {
                 return;
             }
             res.status(200);
-
             res.json({message: "OK",data:users});
         });
     }
@@ -136,7 +135,7 @@ userRoute.post(function(req, res,next) {
 
 
   user.create(req.body,function(err,user) {
-    if(err){
+    if(err || user === null){
         res.status(500);
         res.json({message:"Email already exists",data:[]});
         return;
@@ -162,9 +161,9 @@ GET
 */
 userIDRoute.get(function(req, res,next){
   user.findById(req.params.id,function(err,users){
-    if(err || users == null){
+    if(err || users === null){
       res.status(404);
-      res.send({message: "User not found",data: []});
+      res.json({message: "User not found",data: []});
       return;
     }
     res.json({message: "OK",data:users});
@@ -174,86 +173,57 @@ userIDRoute.get(function(req, res,next){
 PUT
 */
 userIDRoute.put(function(req, res,next) {
-    user.findById(req.params.id,req.body,function(err,users){
+    console.log("PUTTING");
+    user.findById(req.params.id,function(err,users){
+        console.log("BEFORE ERR");
         if(err){
-            if(err.name == 'MongoError'){
+            if(err.name === "MongoError"){
                 res.status(500);
                 res.json({message:"Email already exists",data:[]});
                 return;
+            }else{
+                res.status(404);
+                res.json({message:"User not found",data:[]});
             }
+        }
+        if(users === null){
+            console.log("NULLLL")
             res.status(404);
             res.json({message:"User not found",data:[]});
             return;
         }
-
-        if(typeof(req.body.name) === "undefined" || typeof(req.body.email) === "undefined" || req.body.email === "" || req.body.name === ""){
+        console.log(req.body.name);
+        console.log(req.body.email);
+        if(!req.body.name || !req.body.email || req.body.email === "" || req.body.name === ""){
             res.status(500);
             res.json({message:"Validation Error: You are missing name or email",data:[]});
             return;
         }
-        user.update(req.params.id,req.body,function(err,users){
-            if(err){
-                res.status(500);
-                res.json({message: "Something went wrong! Try again",data:[]})
-                return;
-            }
-            user.findById(req.params.id,function(err,user_return){
+        else{
+            console.log(req.body);
+            user.update(users,req.body,function(err,users){
                 if(err){
                     res.status(500);
+                    console.log("WHY DIDNT IT WORK REG ERR")
                     res.json({message: "Something went wrong! Try again",data:[]})
                     return;
                 }
-                console.log(user_return.dateCreated);
-                res.json({message: "User updated",data:user_return});
+                user.findById(req.params.id,function(err,user_return){
+                    if(err){
+                        res.status(500);
+                        res.json({message: "Something went wrong! Try again",data:[]})
+                        return;
+                    }
+                    // console.log(user_return.dateCreated);
+                    res.json({message: "User updated",data:user_return});
+                });
             });
-        });
+        }
         // user.name = req.body.name;
         // user.email = req.body.email;
         //
     });
-
-  // user.findByIdAndUpdate(req.params.id,req.body,function(err,users) {
-    // console.log(users.dateCreated);
-    // console.log(req.body.dateCreated);
-    // if(err){
-    //     if(err.name == 'MongoError'){
-    //         res.status(500);
-    //         res.json({message:"Email already exists",data:[]});
-    //         return;
-    //     }
-    //     res.status(404);
-    //     res.json({message:"User not found",data:[]});
-    //     return;
-    // }
-    //
-    // if(typeof(req.body.name) === "undefined" || typeof(req.body.email) === "undefined" || req.body.email === "" || req.body.name === ""){
-    //     res.status(500);
-    //     res.json({message:"Validation Error: You are missing name or email",data:[]});
-    //     return;
-    // }
-    // user.name = req.body.name;
-    // user.email = req.body.email;
-    // if(typeof(req.body.pendingTasks) = "undefined")
-    // if(req.body.dateCreated)
-    // if(typeof(req.body.dateCreated) !== "undefined" ){
-    //     req.body.dateCreated = users.dateCreated;
-    //     users.dateCreated
-    // }
-    // user.findById(req.params.id,function(err,user_return){
-    //     if(err){
-    //         res.status(500);
-    //         res.json({message: "Something went wrong! Try again",data:[]})
-    //         return;
-    //     }
-    //     console.log(user_return.dateCreated);
-    //     res.json({message: "User updated",data:user_return});
-    // });
-  // });
-
 });
-/*
-DELETE
-*/
 userIDRoute.delete(function(req, res,next) {
   user.findByIdAndRemove(req.params.id, function(err,user) {
      if(err || user == null){
@@ -310,7 +280,7 @@ taskRoute.get(function(req, res,next) {
       "select": select,
       "count": count
     };
-    if(count == true){
+    if(count === true){
         task.count({}, function(err, count){
             if(err){
                 res.status(500);
@@ -341,18 +311,20 @@ TASK POST
 */
 
 taskRoute.post(function(req, res,next) {
-  if(typeof(req.body.name) == "undefined" || typeof(req.body.deadline) == "undefined"){
-    res.status(500);
-    res.json({message:"You are missing name or deadline",data:[]});
-    return;
-  }
-  task.name = req.body.name;
-  task.deadline = req.body.deadline;
+    var name = req.body.name;
+    var deadline = req.body.deadline;
+    console.log(req.body.deadline);
+    if(!name || !deadline){
+      res.status(500);
+      res.json({message:"Validation Error: You are missing name or deadline",data:[]});
+      return;
+    }
+    task.name = req.body.name;
+    task.deadline = req.body.deadline;
 
 
-  task.create(req.body,function(err,task) {
-    if(err){
-       res.send(err);
+    task.create(req.body,function(err,task) {
+    if(err || task === null){
        res.status(500);
        res.json({message:"Something went wrong try again!",data:[]});
        return;
@@ -371,9 +343,9 @@ TASK ID GET
 */
 taskIDRoute.get(function(req, res,next){
   task.findById(req.params.id,function(err,tasks){
-    if(err || tasks == null){
+    if(err || tasks === null){
         res.status(404);
-        res.send({message: "Task not found",data: []});
+        res.json({message: "Task not found",data: []});
         return;
     }
     res.json({message: "OK",data:tasks});
@@ -383,46 +355,49 @@ taskIDRoute.get(function(req, res,next){
 TASK PUT
 */
 taskIDRoute.put(function(req, res,next) {
-  console.log(req.body.name);
-  console.log(req.body.deadline);
-  task.findById(req.params.id,req.body,function(err,tasks){
-
-  });
-  task.findByIdAndUpdate(req.params.id,req.body,function(err,tasks) {
-    if(tasks == null){
-        res.status(404);
-        res.json({message:"Task not found",data:[]});
-        return;
-    }
-    if(typeof(req.body.name) == "undefined" || typeof(req.body.deadline) == "undefined" || req.body.deadline == "" || req.body.name == ""){
-        res.status(500);
-        res.json({message:"Validation Error: You are missing name or deadline",data:[]});
-        return;
-    }
-    if(err){
-        res.status(500);
-        res.json({message:"Something went wrong!",data:[]});
-        return;
-    }
-    if(typeof(req.body.dateCreated) !== "undefined" ){
-        req.body.dateCreated = tasks.dateCreated;
-    }
-    task.findById(req.params.id,function(err,task_return){
-        if(err){
-            res.status(500);
-            res.json({message: "Something went wrong! Try again",data:[]})
+    task.findById(req.params.id,function(err,tasks){
+        if(err || tasks === null){
+            res.json(err);
+            return
+            res.status(404);
+            res.json({message:"Task not found",data:[]});
             return;
         }
-        res.json({message: "Task updated",data:task_return});
+
+        if(typeof(req.body.name) === "undefined" || typeof(req.body.deadline) === "undefined" || req.body.deadline === "" || req.body.name === ""){
+            res.status(500);
+            res.json({message:"Validation Error: You are missing name or deadline",data:[]});
+            return;
+        }
+        task.update(tasks,req.body,function(err,tasks){
+            if(err){
+                res.status(500);
+                res.json({message: "Something went wrong! Try again",data:[]})
+                return;
+            }
+            task.findById(req.params.id,function(err,task_return){
+                if(err){
+                    res.status(500);
+                    res.json({message: "Something went wrong! Try again",data:[]})
+                    return;
+                }
+                res.json({message: "Task updated",data:task_return});
+            });
+        });
+        // user.name = req.body.name;
+        // user.email = req.body.email;
+        //
     });
-  });
+
 });
+
+
 /*
 TASK DELETE
 */
 taskIDRoute.delete(function(req, res,next) {
   task.findByIdAndRemove(req.params.id, function(err,task) {
-    if(err || task == null){
+    if(err || task === null){
        res.status(404);
        res.json({message:"Task doesn't exist",data:[]});
        return;
