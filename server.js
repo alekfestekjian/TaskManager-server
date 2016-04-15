@@ -83,8 +83,7 @@ userRoute.get(function(req, res,next) {
     if(typeof(req.query.count) != "undefined"){
       count = JSON.parse(req.query.count);
     }
-    console.log(count);
-    console.log(fields);
+
     var options = {
       "skip": skip,
       "limit": limit,
@@ -92,10 +91,10 @@ userRoute.get(function(req, res,next) {
       "select": select,
       "count": count,
     };
-    console.log(count);
     if(count === true){
-        console.log("HI got to count")
-        user.count({}, function(err, count){
+        user.find(id,fields,options,function(err,users){
+            console.log(users)
+        }).count({}, function(err, count){
             if(err){
                 res.status(500);
                 res.json({message: "Something went wrong! Try again",data:count})
@@ -104,6 +103,7 @@ userRoute.get(function(req, res,next) {
             res.status(200);
             res.json({message: "OK",data:count});
         });
+
     }
     else{
         user.find(id,fields,options,function(err,users){
@@ -173,9 +173,7 @@ userIDRoute.get(function(req, res,next){
 PUT
 */
 userIDRoute.put(function(req, res,next) {
-    console.log("PUTTING");
     user.findById(req.params.id,function(err,users){
-        console.log("BEFORE ERR");
         if(err){
             if(err.name === "MongoError"){
                 res.status(500);
@@ -187,24 +185,24 @@ userIDRoute.put(function(req, res,next) {
             }
         }
         if(users === null){
-            console.log("NULLLL")
             res.status(404);
             res.json({message:"User not found",data:[]});
             return;
         }
-        console.log(req.body.name);
-        console.log(req.body.email);
         if(!req.body.name || !req.body.email || req.body.email === "" || req.body.name === ""){
             res.status(500);
             res.json({message:"Validation Error: You are missing name or email",data:[]});
             return;
         }
         else{
-            console.log(req.body);
-            user.update(users,req.body,function(err,users){
+            users.name = req.body.name
+            users.email = req.body.email
+            if(req.body.pendingTasks){
+                users.pendingTasks = req.body.pendingTasks
+            }
+            users.save(function(err,users_2){
                 if(err){
                     res.status(500);
-                    console.log("WHY DIDNT IT WORK REG ERR")
                     res.json({message: "Something went wrong! Try again",data:[]})
                     return;
                 }
@@ -214,14 +212,12 @@ userIDRoute.put(function(req, res,next) {
                         res.json({message: "Something went wrong! Try again",data:[]})
                         return;
                     }
-                    // console.log(user_return.dateCreated);
                     res.json({message: "User updated",data:user_return});
                 });
             });
+
         }
-        // user.name = req.body.name;
-        // user.email = req.body.email;
-        //
+
     });
 });
 userIDRoute.delete(function(req, res,next) {
@@ -281,7 +277,8 @@ taskRoute.get(function(req, res,next) {
       "count": count
     };
     if(count === true){
-        task.count({}, function(err, count){
+        task.find(id,fields,options,function(err,tasks){
+        }).count({}, function(err, count){
             if(err){
                 res.status(500);
                 res.json({message: "Something went wrong! Try again",data:count})
@@ -313,7 +310,6 @@ TASK POST
 taskRoute.post(function(req, res,next) {
     var name = req.body.name;
     var deadline = req.body.deadline;
-    console.log(req.body.deadline);
     if(!name || !deadline){
       res.status(500);
       res.json({message:"Validation Error: You are missing name or deadline",data:[]});
@@ -364,11 +360,13 @@ taskIDRoute.put(function(req, res,next) {
             return;
         }
 
+
         if(typeof(req.body.name) === "undefined" || typeof(req.body.deadline) === "undefined" || req.body.deadline === "" || req.body.name === ""){
             res.status(500);
             res.json({message:"Validation Error: You are missing name or deadline",data:[]});
             return;
         }
+
         task.update(tasks,req.body,function(err,tasks){
             if(err){
                 res.status(500);
@@ -384,9 +382,7 @@ taskIDRoute.put(function(req, res,next) {
                 res.json({message: "Task updated",data:task_return});
             });
         });
-        // user.name = req.body.name;
-        // user.email = req.body.email;
-        //
+
     });
 
 });
